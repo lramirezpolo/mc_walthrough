@@ -1,0 +1,143 @@
+---
+title: "MRC examples"
+format: html
+editor: visual
+toc: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Setup
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+library("tidyverse")
+library("ds4ling")
+library("untidydata")
+library("broom")
+library("emmeans")
+
+```
+# Tidy Data
+```{r}
+# label: explore-data
+
+ld <- language_diversity %>%
+  mutate_if(is.character, as.factor) %>% 
+  pivot_wider(names_from = Measurement, values_from =Value) %>% 
+  ##mutate adds new columns to dataset
+  mutate(
+    lang_log = log(Langs),
+    area_log = log(Area),
+    pol_log = log(Population)
+
+    
+  )
+
+
+##Exploring the data
+View(ld)
+summary(ld) 
+dim(ld)
+str(ld)
+glimpse(ld)
+
+##ld %>% 
+##  ggplot()+
+##  aes( x= pop_log, y=lang_log) +
+##  geom_point() +
+##  geom_smooth(method="lm")
+
+##ld %>% 
+##  ggplot() +
+##  aes(x=Continent, y=Value) +
+##  geom_point()
+
+
+
+## First we tried this part and then I added above
+##ld %>% 
+##  pivot_wider(names_from = Measurement, values_from =Value ) %>% 
+##View ()
+
+```
+# Analysis
+```{r}
+#| label:fit-model
+
+mean (ld$lang_long)
+
+mod_0 <- lm(lang_log ~ 1, data= ld)
+mod_1 <- lm(lang_log ~ 1 + pol_log, data= ld)
+mod_2 <- lm(lang_log ~ 1 + pol_log + area_log, data = ld)
+mod_3 <- lm(lang_log ~ 1 + pol_log + area_log + pol_log:area_log, data = ld)
+
+
+summary(mod_0)
+summary(mod_1)
+summary(mod_2)
+summary(mod_3)
+
+
+
+##Interpretation mod1
+##When langage is = 0, then the value of pol_log is 0.36709
+##A unit increase in pol_log, is associated with an increase in lang_log of 0.36709
+
+
+##Mod 2
+##A one unit change in pol_log is associated with an increase area_log of 1.557 with a constant value of pol_log of 0
+
+##Mod 3
+#
+
+```
+# Tables and Plots
+
+Hello, please appreciate @tbl-model1 and the difference with @tbl-model3.
+
+```{r}
+#| label: tbl-model1
+#| tbl-cap: "Hello"
+
+tidy(mod_1) %>% 
+  knitr::kable(format = "pandoc")
+
+
+
+```
+
+```{r}
+#| label: tbl-model3
+#| tbl-cap: "Hello"
+
+tidy(mod_3) %>% 
+  knitr::kable(format = "pandoc")
+
+```
+
+```{r}
+
+emmeans(
+  object = mod_1,
+  specs = ~ pol_log,
+  at = list(pol_log = seq(0, 20, by = 1))
+  ##give me the estimated emmean on different values for pol_log (0-20)
+  
+)
+```
+
+```{r}
+
+emmeans(
+  object = mod_3,
+  specs = ~ pol_log * area_log,
+  at = list(pol_log = c(0, 10, 20),
+       area_log = c(0, 10, 20))
+  ##give me the estimated emmean on different values for pol_log (0-20)
+  
+)
+```
+
